@@ -47,13 +47,43 @@ static void fork_server(void) {
 
 extern void hfuzzInstrumentInit(void);
 
+int hfuzz_pc_trace_fd = -1;
+
 void hfuzz_qemu_setup(void) {
   rcu_disable_atfork();
   hfuzzInstrumentInit();
 
   if (getenv("HFUZZ_INST_LIBS")) {
-    hfuzz_qemu_start_code = 0;
-    hfuzz_qemu_end_code   = (abi_ulong)-1;
+    hfuzz_qemu_start_code[0] = 0;
+    hfuzz_qemu_end_code[0]   = (abi_ulong)-1;
+  } else if (getenv("HFUZZ_TRACE_RANGES")) {
+    const char *it = getenv("HFUZZ_TRACE_RANGES");
+    while (*it) {
+      abi_ulong from, to, nr = 0;
+      int nc;
+      nr = sscanf(it, "0x" TARGET_FMT_lx "-0x" TARGET_FMT_lx "%n", &from, &to, &nc);
+      if (nc >= 7 && nr == 2) {
+        printf("add lib map %x " TARGET_FMT_lx " : " TARGET_FMT_lx " - " TARGET_FMT_lx " \n", nc, nr, from, to);
+        hfuzz_qemu_start_code[hfuzz_qemu_img_cnt] = from;
+        hfuzz_qemu_end_code[hfuzz_qemu_img_cnt]   = to;
+        hfuzz_qemu_img_cnt+=1;
+        if (hfuzz_qemu_img_cnt == 20) break;
+      } else {
+        break;
+      }
+      it += nc;
+      if (*it == ',') it++;
+      else break;
+    }
+
+  }
+
+  if (getenv("HFUZZ_PC_TRACE_FILE")) {
+      hfuzz_pc_trace_fd = open(getenv("HFUZZ_PC_TRACE_FILE"), O_CREAT | O_EXCL | O_WRONLY, 0600);
+      if (hfuzz_pc_trace_fd == -1) {
+          perror("open HFUZZ_PC_TRACE_FILE");
+          exit(1);
+      }
   }
 
 #ifdef HFUZZ_FORKSERVER

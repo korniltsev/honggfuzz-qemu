@@ -24,8 +24,9 @@
 #define ELF_OSABI   ELFOSABI_SYSV
 
 abi_ulong hfuzz_qemu_entry_point;
-abi_ulong hfuzz_qemu_start_code;
-abi_ulong hfuzz_qemu_end_code;
+abi_ulong hfuzz_qemu_start_code[20];
+abi_ulong hfuzz_qemu_end_code[20];
+uint32_t  hfuzz_qemu_img_cnt = 1;
 
 /* from personality.h */
 
@@ -2439,14 +2440,14 @@ static void load_elf_image(const char *image_name, int image_fd,
             if (elf_prot & PROT_EXEC) {
                 if (vaddr < info->start_code) {
                     info->start_code = vaddr;
-                    if (!hfuzz_qemu_start_code) {
-                      hfuzz_qemu_start_code = vaddr;
+                    if (!hfuzz_qemu_start_code[0]) {
+                      hfuzz_qemu_start_code[0] = vaddr;
                     }
                 }
                 if (vaddr_ef > info->end_code) {
                     info->end_code = vaddr_ef;
-                    if (!hfuzz_qemu_end_code) {
-                      hfuzz_qemu_end_code = vaddr_ef;
+                    if (!hfuzz_qemu_end_code[0]) {
+                      hfuzz_qemu_end_code[0] = vaddr_ef;
                     }
                 }
             }

@@ -1740,8 +1740,11 @@ TranslationBlock *tb_gen_code(CPUState *cpu,
 
     tcg_ctx->cpu = env_cpu(env);
     {
-      if (pc < hfuzz_qemu_end_code && pc > hfuzz_qemu_start_code) {
-        hfuzz_qemu_instrumentation_address = pc;
+      for (abi_ulong i = 0; i < hfuzz_qemu_img_cnt; i++) {
+        if (pc < hfuzz_qemu_end_code[i] && pc >= hfuzz_qemu_start_code[i]) {
+          hfuzz_qemu_instrumentation_address = pc;
+          break;
+        }
       }
     }
     gen_intermediate_code(cpu, tb, max_insns);
