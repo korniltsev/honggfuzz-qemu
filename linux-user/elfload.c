@@ -2395,7 +2395,12 @@ static void load_elf_image(const char *image_name, int image_fd,
     info->elf_flags = ehdr->e_flags;
 
     if (!hfuzz_qemu_entry_point) {
-      hfuzz_qemu_entry_point = info->entry;
+      char *env_entry = NULL;
+      if ((env_entry = getenv("HFUZZ_ENTRYPOINT")) != NULL) {
+        hfuzz_qemu_entry_point = (abi_ulong)strtoull(env_entry, NULL, 16);
+      } else {
+        hfuzz_qemu_entry_point = info->entry;
+      }
     }
 
     for (i = 0; i < ehdr->e_phnum; i++) {
